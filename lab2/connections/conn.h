@@ -6,6 +6,8 @@
 
 class Conn {
 public:
+	virtual ~Conn() = default;
+
 	static Conn* create(pid_t pid, bool isCreate);
 
 	virtual bool open(pid_t pid, bool isCreate) = 0;

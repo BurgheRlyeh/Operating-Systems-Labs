@@ -79,26 +79,16 @@ public:
         if (conn) delete conn;
     }
 
-    void* input_loop() {
-        for(;;) {
-            if (std::cin.peek() == EOF) continue;
-
-            std::string text{};
-            std::cin >> std::ws;
-            std::getline(std::cin, text);
-            Message msg{};
-            strncpy(msg.text, text.c_str(), text.size());
-            outMsgs.push(msg);
-        }
+    static void* input_loop(void* c) {
+        return reinterpret_cast<Connection*>(c)->nonstatic_input_loop();
     }
 
-    void* host_loop() {
-        lastMsgTime = std::chrono::high_resolution_clock::now();
-        while (read("Client") && write());
+    static void* host_loop(void* c) {
+        return reinterpret_cast<Connection*>(c)->nonstatic_host_loop();
     }
 
-    void* client_loop() {
-        while (write() && read("Host"));
+    static void* client_loop(void* c) {
+        return reinterpret_cast<Connection*>(c)->nonstatic_client_loop();
     }
 
 private:
@@ -125,5 +115,30 @@ private:
         bool res{ outMsgs.writeTo(conn) };
         sem_post(sem_write);
         return res;
+    }
+
+    void* nonstatic_input_loop() {
+        for(;;) {
+            if (std::cin.peek() == EOF) continue;
+
+            std::string text{};
+            std::cin >> std::ws;
+            std::getline(std::cin, text);
+            Message msg{};
+            strncpy(msg.text, text.c_str(), text.size());
+            outMsgs.push(msg);
+        }
+        return nullptr;
+    }
+
+    void* nonstatic_host_loop() {
+        lastMsgTime = std::chrono::high_resolution_clock::now();
+        while (read("Client") && write());
+        return nullptr;
+    }
+
+    void* nonstatic_client_loop() {
+        while (write() && read("Host"));
+        return nullptr;
     }
 };
